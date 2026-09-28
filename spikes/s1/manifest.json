@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "S1 Prompt API probe",
+  "version": "0.0.1",
+  "permissions": ["offscreen"],
+  "background": {
+    "service_worker": "sw.js",
+    "type": "module"
+  },
+  "action": {}
+}

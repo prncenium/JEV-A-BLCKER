@@ -24,7 +24,7 @@ T1, then S1 to S5, then T2 to T15. Dependencies are listed per task.
 - Depends on: T1
 - Do: in spikes/s1 build a minimal extension. Look up the current Chrome built-in AI documentation first and do not guess API names. Record: whether the API exists in an MV3 service worker; whether it must run in an offscreen document instead; its availability states and model download behavior; whether a JSON-schema response constraint works; whether any usable confidence value can be obtained.
 - Done when: specs/spikes.md has a section "S1" with the findings and a clear recommendation for nano.js.
-- Status: TODO
+- Status: DONE
 
 ### S2 — element.click() on YouTube controls
 - Answers: OQ2
@@ -145,7 +145,7 @@ T1, then S1 to S5, then T2 to T15. Dependencies are listed per task.
 - Requirements: R34
 - Depends on: T10, S1
 - Do: getProvider and NanoProvider per 04-decision-contract.md, using the S1 findings.
-- Done when: tests with a stubbed Prompt API show getProvider returns a provider for "nano" and "jev" and throws on any other name; nano maps output to a Decision; nano makes no network request (a fetch spy asserts zero calls). A manual check in real Chrome matches the S1 findings.
+- Done when: tests with a stubbed Prompt API show getProvider returns a provider for "nano" and "jev" and throws on any other name; nano maps output to a Decision; nano makes no network request (a fetch spy asserts zero calls); each call creates its own session and destroys it; a returned choice outside the offered options throws. A manual check in real Chrome matches the S1 findings.
 - Status: TODO
 
 ### T12 — providers/jev.js

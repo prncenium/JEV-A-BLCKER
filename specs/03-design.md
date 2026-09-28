@@ -132,7 +132,7 @@ getProvider(name) returns { decide(request) } for "jev" or "nano". Unknown name 
 decide(request): reads jevKey from storage.local, calls Jev through Vercel AI Gateway (model typesafe-ai/jev) with a timeout, maps the result to { operation, targetId, confidence }. Missing key throws. Never logs the key or full URLs. Exact request and response format is defined in 04-decision-contract.md.
 
 ### background/providers/nano.js
-decide(request): uses Chrome's built-in Prompt API with a JSON schema response constraint. Makes no network request (R34). Runtime context is open, see OQ1.
+decide(request): uses Chrome's built-in Prompt API (LanguageModel) with a JSON schema response constraint. Runs directly in the background service worker (spike S1). Makes no network request (R34). Creates a new session for every call and destroys it afterwards. Validates that the returned choice is one of the offered options and throws otherwise. Experimental fallback, see DD7.
 
 ### options/options.html and options.js
 Enable toggle (default off), provider select (nano or jev), API key input shown only when provider is jev, save to storage.local, and a viewer for the last 20 flow logs.
@@ -202,9 +202,10 @@ IDLE reset
 - DD4: After the single retry allowed by R14, confidence below 0.8 aborts.
 - DD5: Config is checked with GET_CONFIG at every AD_DETECTED.
 - DD6: Step 5 is a model call whose only valid outcome is DONE (or WAIT / BLOCKED). Minimum calls per successful flow is 5, leaving 3 spare under R23.
+- DD7: Nano is an experimental fallback. Spike S1 showed it picks a wrong option when the right one is missing, follows instructions injected into labels, and reports high confidence on wrong answers. Its confidence is not a safety gate. The R40 allowlist is. Jev is the primary provider.
 
 ## Open questions (each gets a spike task in 05-tasks.md)
-- OQ1: Is Chrome's Prompt API available in an MV3 service worker? If not, NanoProvider runs in an offscreen document (adds the offscreen permission) and R32 needs a clarifying note that it covers network model calls.
+- OQ1: RESOLVED by spike S1 (Chrome 153). LanguageModel is available in the MV3 service worker. No offscreen document and no offscreen permission are needed.
 - OQ2: Does element.click() from the content script trigger YouTube's handlers on the ⓘ button and on the iframe's div[role=button] elements? If not, fall back to dispatching a pointer and mouse event sequence.
 - OQ3: Can a top-frame content script read the same-origin iframe's contentDocument without all_frames? Expected yes.
 - OQ4: Does storage.local.setAccessLevel(TRUSTED_CONTEXTS) block content-script reads in current Chrome?
@@ -244,5 +245,8 @@ IDLE reset
 | R42 | scopes.js, flow.js |
 | R43 | scopes.js, flow.js, background/index.js |
 
+## Amendment Log
+- After spike S1: nano.js runs in the service worker with no offscreen document, OQ1 resolved, DD7 added.
+
 ## Status
-Phase 3: LOCKED (all R1 to R43 traced)
+Phase 3: LOCKED (all R1 to R43 traced; amended after S1: OQ1 resolved, DD7 added)

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>S1 Prompt API probe</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 1.5rem; max-width: 60rem; }
+    button { margin: 0 0.5rem 0.5rem 0; padding: 0.5rem 0.75rem; }
+    pre { background: #f4f4f4; padding: 1rem; white-space: pre-wrap; word-break: break-word; }
+  </style>
+</head>
+<body>
+  <h1>S1 Prompt API probe</h1>
+  <div>
+    <button id="run-extension-page">Run in extension page</button>
+    <button id="run-sw">Run in service worker</button>
+    <button id="run-offscreen">Run in offscreen document</button>
+    <button id="download">Download model (needs click)</button>
+    <button id="copy">Copy results</button>
+  </div>
+  <pre id="out">(no results yet)</pre>
+  <script type="module" src="test.js"></script>
+</body>
+</html>

@@ -98,11 +98,18 @@ POST https://api.typesafe.ai/v1/systemone with model "jev-latest". It would need
 Jev derives Choice confidence from its probability distribution. The thresholds 0.8 and 0.5 (R13 to R15) apply to it as is. Whether these numbers are well calibrated for this task is UNKNOWN. Tune them in Phase 7 from real flow logs.
 
 ## Nano mapping (Chrome built-in Prompt API)
+Verified by spike S1 (Chrome 153, one machine).
 - Same input, same options table, same criteria strings placed in the prompt.
-- Output is constrained to a JSON schema { choice: enum of the option ids, confidence: number 0 to 1 } and mapped to a Decision with steps 1 to 6 above.
+- Runs directly in the background service worker. No offscreen document.
+- Call shape, as used in spikes/s1/probe.js: LanguageModel.availability() with expectedInputs and expectedOutputs of type text, language en; LanguageModel.create(); session.prompt(text, { responseConstraint }); session.destroy().
+- Output is constrained to the JSON schema { choice: enum of the option ids, confidence: number 0 to 1 } and mapped to a Decision with steps 1 to 6 above.
+- A new session is created for every DECIDE call and destroyed afterwards.
+- The returned choice MUST be checked against the offered option ids. In S1 case B, e2 was returned although it was not in the enum. Whether Chrome enforces the constraint is UNRESOLVED. A choice outside the offered options throws an error and the flow aborts (R25).
 - Makes no network request (R34).
-- UNVERIFIED: the exact API call shape, whether it runs in a service worker (OQ1 in 03-design.md), and whether the model returns a usable confidence. The Prompt API has no calibrated confidence. A confidence from Nano is self-reported and uncalibrated. The exact call is defined by spike S1 in 05-tasks.md, not guessed here.
-- OQ7: Nano may need its own thresholds, or may be limited to decisions gated by the allowlist alone. Decided after spike S1.
+- If LanguageModel is undefined or availability is not "available", the provider throws and the flow aborts. Model download on a fresh install was NOT tested (UNVERIFIED).
+- Confidence is self-reported and not calibrated. S1 showed high confidence on wrong answers. The thresholds in R13 to R15 apply unchanged, but they are not a safety gate for Nano. The R40 allowlist is.
+- Known weaknesses (S1): picks a wrong option instead of WAIT or BLOCKED when the right option is missing, and follows instructions injected into label text.
+- Status: experimental fallback. Jev is primary.
 
 ## Traceability
 | Requirement | Where it lands |
@@ -122,9 +129,12 @@ Jev derives Choice confidence from its probability distribution. The thresholds 
 Sign-off of this document. Live verification needs the user's key, so it is spike S4 in 05-tasks.md: three recorded snapshots (step 1, step 2, step 3) sent through the gateway must return the correct entry id at confidence 0.8 or higher.
 
 ## Open questions
-- OQ1: Prompt API in a service worker (from 03-design.md), resolved by S1.
+- OQ1: RESOLVED by S1. The Prompt API works in the service worker.
 - OQ5: Jev format is verified. Vercel Gateway path, the free-tier status of Jev, and whether a Vercel free credit covers it are UNVERIFIED. Resolved by S4.
-- OQ7: Nano confidence source and thresholds.
+- OQ7: RESOLVED by S1. Same thresholds, no separate tuning. Nano is experimental and the allowlist is the guard.
+
+## Amendment Log
+- After spike S1: Nano mapping rewritten with verified findings, OQ1 and OQ7 resolved.
 
 ## Status
-Phase 4: LOCKED (live verification pending in spike S4)
+Phase 4: LOCKED (live verification pending in spike S4; Nano section amended after S1)
