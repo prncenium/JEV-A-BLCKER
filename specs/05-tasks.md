@@ -66,7 +66,7 @@ T1, then S1 to S5, then T2 to T15. Dependencies are listed per task.
 - Depends on: none
 - Do: Vite, @crxjs/vite-plugin, Vitest, jsdom, all at the latest stable versions. The manifest is the one in 03-design.md. Entry files only log a marker line. Confirm .gitignore contains node_modules, dist, .env. If @crxjs/vite-plugin does not support the installed Vite major version, stop and report. Do not switch tooling without amending 00-steering.md.
 - Done when: npm install and npm run build succeed in extension/; dist/ loads unpacked in Chrome with zero errors on chrome://extensions; the repo has no .ts file, no tsconfig.json and no typescript dependency; the installed versions are recorded in specs/spikes.md under "Versions".
-- Status: TODO
+- Status: DONE
 
 ### T2 — shared/constants.js
 - Files: extension/src/shared/constants.js, extension/tests/constants.test.js

@@ -25,7 +25,7 @@ When a video ad plays on youtube.com, automatically perform: click ⓘ (My Ad Ce
 - Any bundled/shared API key
 
 ## Stack
-- Vite 7 + JavaScript (ES modules, ES2022)
+- Vite 8 + JavaScript (ES modules, ES2022)
 - @crxjs/vite-plugin (MV3)
 - Vitest for unit tests
 - No UI framework (options page = plain HTML + JS)
@@ -59,4 +59,4 @@ The full ⓘ → Block ad → ✕ flow completes without user input on ≥ 90% o
 A phase is done when its spec file is written, reviewed, and its gate condition is met. Code for a phase is done when it satisfies a numbered requirement from 01-requirements.md.
 
 ## Status
-Phase 0: LOCKED (amended after recon: Block/Continue wording, C4 raised to 8, C5 rescoped, C8 added)
+Phase 0: LOCKED (amended after recon: Block/Continue wording, C4 raised to 8, C5 rescoped, C8 added; amended after T1: Vite 7 changed to Vite 8, @crxjs/vite-plugin 3.0.0 supports it)
