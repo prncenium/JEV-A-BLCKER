@@ -42,3 +42,32 @@ Date: 2026-09-28. Chrome 153.0.0.0, desktop, one machine. Model availability was
 (a) One session was created once per probe() call, before the case loop (spikes/s1/probe.js:118, LanguageModel.create), and that same session was reused for every prompt across all three cases and all 5 runs each (spikes/s1/probe.js:128-152, session.prompt at line 136 inside the nested case/run loops). Later runs and cases B and C may have been influenced by earlier prompts in the same session. They were not re-run.
 
 (b) The responseConstraint enum is built by schemaFor(optionIds), which sets choice.enum to optionIds directly (spikes/s1/probe.js:13-21). For case B, optionIds is ["e1", "e3", "e4", "e5", "e6", "e7", "WAIT", "BLOCKED"] (spikes/s1/probe.js:65), which does not include "e2". e2 was returned although it was not in the enum. Chrome may not be enforcing the constraint. UNRESOLVED.
+
+## S2 — element.click() on YouTube controls
+Date: 2026-09-29. Same machine as S1 (Chrome 153.0.0.0 was reported there). The state of other YouTube extensions during the run was not recorded. Unpacked test extension in spikes/s2, top frame only, no all_frames. Clicks are triggered by script, not by a physical mouse.
+
+### Results, auto-run (one run, key "a", plain element.click() only)
+| Step | Target | found | clicked | effectSeen | effectMs |
+|------|--------|-------|---------|------------|----------|
+| 1 | ⓘ (My Ad Center button) | true | true | true | 615 |
+| 2 | Block | true | true | true | 101 |
+| 3 | Continue | true | true | true | 209 |
+| 4 | Close | true | true | true | 110 |
+
+Effects: step 1 the [role="region"][aria-label="Main ad controls"] appeared in the iframe; step 2 the "Stop seeing this ad?" dialog became visible; step 3 the text "Ad blocked" appeared; step 4 the Close button disappeared. iframeExistsAtClick was false at step 1 and true at steps 2 to 4. iframeReadableAtClick was true at steps 2 to 4.
+
+### Earlier partial runs
+- Mouse-triggered step 1: effectSeen true after 636 ms.
+- Mouse-triggered step 2: YouTube's popup closed and Block did not register. Cause not verified. It fits a click outside the popup closing it.
+- Key-triggered step 2: effectSeen true after 112 ms.
+- Key-triggered step 3: no result. After the dialog opened, keyboard focus appeared to be inside the iframe, and the probe listened only on the top page. Not verified.
+- The first probe version used region[aria-label="Main ad controls"], which is not a valid element selector, and reported effectSeen false at step 1 until it was corrected.
+
+### Findings
+1. OQ2 RESOLVED: plain element.click() works on all four R40 targets from a content script. The pointer and mouse event sequence fallback was not needed and was not tested.
+2. The aboutthisad iframe does not exist before the ⓘ click. The click creates it and the controls were present about 615 ms later (one run).
+3. OQ3 RESOLVED: a top-frame content script reads the iframe contentDocument without all_frames.
+4. Measured effect waits are 101, 209 and 110 ms for steps 2 to 4. About 1 second of waiting for the whole flow.
+5. Observation by the user, NOT measured: with an ad labeled "1 of 2", after the four clicks ad 1 was skipped and ad 2 also disappeared. This contradicts R3 in 00-steering.md. R3 stays unchanged until spike S3 measures it.
+6. Not tested: fullscreen, signed-out, skippable ads, other Chromium browsers.
+7. The extension must never use physical mouse clicks. It uses element.click() only.

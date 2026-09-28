@@ -32,13 +32,13 @@ T1, then S1 to S5, then T2 to T15. Dependencies are listed per task.
 - Depends on: T1
 - Do: in spikes/s2 build a content script that, on a manual trigger, tries element.click() on each of the four R40 targets one at a time during a real ad: the ⓘ button, Block, Continue, Close. For any target that does not respond, test dispatching pointerdown, mousedown, pointerup, mouseup, click in order. It clicks nothing else.
 - Done when: specs/spikes.md has a section "S2" stating, per target, whether element.click() works and the fallback that works if it does not.
-- Status: TODO
+- Status: DONE
 
 ### S3 — Iframe access and timing
 - Answers: OQ3 and the first two unknowns in 02-recon.md
 - Requirements: R6, R41, R42
 - Depends on: T1
-- Do: in spikes/s3 build a content script (no all_frames) that logs: whether iframe[src*="aboutthisad"] exists before ⓘ is clicked; milliseconds from the ⓘ click to the iframe existing and to region[aria-label="Main ad controls"] being present; whether contentDocument is readable; whether the video keeps playing while the panel is open; whether the iframe is reused or recreated on the next ad of a pod. It never logs the iframe src.
+- Do: in spikes/s3 build a content script (no all_frames). Already known from S2, do not re-measure: the iframe does not exist before the ⓘ click, it appears about 600 ms after it, and contentDocument is readable. Log per ad: whether the video keeps playing while the panel is open; whether the iframe is reused or recreated between ads; timestamps in ms since the ⓘ click at which #movie_player gains or loses the class ad-showing, at which the step 4 Close click happens, and at which the ad indicator "N of M" changes; whether a second ad of a pod ("1 of 2") starts after the four clicks are done on the first ad. It never logs the iframe src.
 - Done when: specs/spikes.md has a section "S3" with these measurements.
 - Status: TODO
 

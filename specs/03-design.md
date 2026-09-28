@@ -63,7 +63,7 @@ extension/
 | Step | Goal text sent to model | Scope | Readiness | Only click allowed (R40) |
 |------|-------------------------|-------|-----------|--------------------------|
 | 1 | Open the My Ad Center panel for the playing ad | #movie_player | #movie_player has class ad-showing | rule (a) |
-| 2 | Click Block | aboutthisad iframe: region[aria-label="Main ad controls"] and the visible Close button | region present in iframe contentDocument | rule (b) |
+| 2 | Click Block | aboutthisad iframe: [role="region"][aria-label="Main ad controls"] and the visible Close button | region present in iframe contentDocument | rule (b) |
 | 3 | Click Continue in the Stop seeing this ad? dialog | aboutthisad iframe: div[role=dialog][aria-label="Stop seeing this ad?"] | dialog present and visible | rule (c) |
 | 4 | Close the My Ad Center panel | aboutthisad iframe: the visible Close button | Close button visible, outside [role=banner] | rule (d) |
 | 5 | Confirm the flow finished | #movie_player | none (runs after the step 4 click wait) | none (only DONE, WAIT, BLOCKED) |
@@ -247,6 +247,7 @@ IDLE reset
 
 ## Amendment Log
 - After spike S1: nano.js runs in the service worker with no offscreen document, OQ1 resolved, DD7 added.
+- After spike S2: selector syntax fixed to [role="region"][aria-label="Main ad controls"].
 
 ## Status
-Phase 3: LOCKED (all R1 to R43 traced; amended after S1: OQ1 resolved, DD7 added)
+Phase 3: LOCKED (all R1 to R43 traced; amended after S1: OQ1 resolved, DD7 added; selector syntax fixed after S2)

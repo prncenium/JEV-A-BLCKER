@@ -15,7 +15,7 @@ Format: EARS. Every requirement is testable. IDs are permanent — never renumbe
 - **R6** — WHEN building a snapshot, the system SHALL include only elements that are visible (non-zero bounding box, not `display:none`, not `visibility:hidden`) and clickable (`button`, `a`, `role="button"`, `role="menuitem"`), and that lie within the scope of the current step: for step 1, descendants of `#movie_player`; for steps 2 to 4, descendants of the `contentDocument` of `iframe[src*="aboutthisad"]`. (amended after recon)
 - **R7** — The system SHALL assign each included element a stable `data-jev-id` attribute for the duration of one flow run.
 - **R8** — Each snapshot entry SHALL contain: `id`, `tag`, `role`, `ariaLabel`, `text` (trimmed, max 80 chars), and `enabled`.
-- **R9** — The system SHALL NOT include in the snapshot: video content, page transcript, watch history, account identifiers, any text outside the current step's scope, the iframe `src` URL, the iframe header (`[role=banner]`), or any iframe element outside `region[aria-label="Main ad controls"]`, `div[role=dialog][aria-label="Stop seeing this ad?"]`, and the visible `button[aria-label="Close"]`. (amended after recon)
+- **R9** — The system SHALL NOT include in the snapshot: video content, page transcript, watch history, account identifiers, any text outside the current step's scope, the iframe `src` URL, the iframe header (`[role=banner]`), or any iframe element outside `[role="region"][aria-label="Main ad controls"]`, `div[role=dialog][aria-label="Stop seeing this ad?"]`, and the visible `button[aria-label="Close"]`. (amended after recon)
 - **R10** — The system SHALL cap a snapshot at 40 entries, keeping those nearest the player controls when over the cap.
 
 ## Decision
@@ -65,7 +65,7 @@ Format: EARS. Every requirement is testable. IDs are permanent — never renumbe
 ## Recon-Driven Requirements
 
 - **R40** — The executor SHALL click only elements matching one of these four rules, regardless of the model output: (a) `button[aria-label="My Ad Center"]` inside `#movie_player`; (b) `div[role=button][aria-label="Block"]` inside the aboutthisad iframe; (c) a `button` whose trimmed text is "Continue" inside `div[role=dialog][aria-label="Stop seeing this ad?"]` in the aboutthisad iframe; (d) the visible `button[aria-label="Close"]` in the aboutthisad iframe that is not inside `[role=banner]`. A `targetId` resolving to anything else SHALL abort the flow per R17.
-- **R41** — WHEN the step 1 click completes, the system SHALL wait until `iframe[src*="aboutthisad"]` exists, its `contentDocument` is readable, and `region[aria-label="Main ad controls"]` is present before building the step 2 snapshot. The wait SHALL count toward the R24 limit.
+- **R41** — WHEN the step 1 click completes, the system SHALL wait until `iframe[src*="aboutthisad"]` exists, its `contentDocument` is readable, and `[role="region"][aria-label="Main ad controls"]` is present before building the step 2 snapshot. The wait SHALL count toward the R24 limit.
 - **R42** — WHEN the aboutthisad iframe `contentDocument` is not accessible, the system SHALL abort per R25.
 - **R43** — The system SHALL NOT log, store, or transmit the iframe `src` URL or any account identifier.
 
@@ -75,6 +75,7 @@ Every component in 02-design.md must map to at least one requirement ID above. E
 
 ## Amendment Log
 - After recon (02-recon.md): R6, R9, R18, R23 amended in place. R40 to R43 added. Goal wording changed from "Block ad / confirm" to "Block / Continue".
+- After spike S2: selector syntax fixed to [role="region"][aria-label="Main ad controls"].
 
 ## Status
-Phase 1: LOCKED (R1 to R43, amended after recon)
+Phase 1: LOCKED (R1 to R43, amended after recon; selector syntax fixed after S2)

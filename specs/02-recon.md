@@ -29,7 +29,7 @@ Like ad, Report, See more <Advertiser> ads, See fewer <Advertiser> ads, Customiz
 Exactly four targets: ⓘ (My Ad Center button in #movie_player), Block, Continue, Close (visible, outside banner).
 
 ## Still unknown
-- Does the iframe exist before ⓘ is clicked, or is it created on click? How long until its content loads?
+- RESOLVED by S2: the iframe is created by the ⓘ click, and the controls were present about 615 ms later (one run).
 - Does the ad keep playing while the panel is open?
 - Behavior when signed out.
 - Skippable and other ad variants.
@@ -37,7 +37,7 @@ Exactly four targets: ⓘ (My Ad Center button in #movie_player), Block, Continu
 ## Spec amendments required (not yet applied)
 - 00-steering goal wording: Block and Continue, not "Block ad" and "confirm".
 - R6: replace the single #movie_player scope with two scopes: #movie_player for step 1, the aboutthisad iframe for steps 2-4.
-- R9: also exclude the iframe header, any element outside region[aria-label="Main ad controls"], the dialog, and the visible Close button.
+- R9: also exclude the iframe header, any element outside [role="region"][aria-label="Main ad controls"], the dialog, and the visible Close button.
 - R23: raise max model calls from 5 to 8.
 - New requirement: click allowlist of exactly four targets.
 - New requirement: wait for the iframe and its content to load before snapshotting.

@@ -9,7 +9,7 @@
 
 ## Fixtures (extension/tests/fixtures/)
 - F1: player with class ad-showing and the ⓘ button (button[aria-label="My Ad Center"], class ytp-ad-button, dynamic id).
-- F2: aboutthisad iframe document, step 2 state: header with role=banner whose aria-label holds a fake account name and email; region[aria-label="Main ad controls"] with Like ad, Block, Report, See more X ads, See fewer X ads, Customize more of your ads (an <a>); a visible Close button; two hidden 0x0 Close elements; a hidden verification dialog.
+- F2: aboutthisad iframe document, step 2 state: header with role=banner whose aria-label holds a fake account name and email; [role="region"][aria-label="Main ad controls"] with Like ad, Block, Report, See more X ads, See fewer X ads, Customize more of your ads (an <a>); a visible Close button; two hidden 0x0 Close elements; a hidden verification dialog.
 - F3: same iframe, step 3 state: div[role=dialog][aria-label="Stop seeing this ad?"] with Cancel and Continue.
 - F4: same iframe, step 4 state: "Ad blocked" banner and the visible Close button.
 - F5: player without ad-showing (normal video).
@@ -43,6 +43,7 @@ Record outcome, steps, calls, duration in specs/test-results.md.
 | M12 | Navigate to another video mid-flow | Flow stops, no clicks on the new page (R5) |
 | M13 | Toggle off while an ad plays | No new flow starts (R31) |
 | M14 | Ad keeps playing while panel is open | Documented (unknown U2 from 02-recon.md, also spike S3) |
+| M15 | Long video with a mid-roll ad at least 10 minutes after the first ad | A second full flow runs. State was reset when ad-showing was removed (R4, R22) |
 
 ## Safety checks
 - SC1: allowlist. In a real ad, force the fake provider to return Like ad, Report, See fewer ads, Customize more of your ads, Cancel and Send feedback in turn. Each aborts with no click (R40).
@@ -75,7 +76,7 @@ After any YouTube UI change or any spec amendment, rerun I1 to I5 and M2, M4, M7
 |-------------|-------|
 | R1, R2 | T7, I2, M7 |
 | R3 | T7 |
-| R4 | T7, I4, M4 |
+| R4 | T7, I4, M4, M15 |
 | R5 | T7, T9, I5, M12 |
 | R6, R7, R8, R9, R10 | T4, T5, F2, F6 |
 | R11 | T9, T12 |
@@ -99,5 +100,8 @@ After any YouTube UI change or any spec amendment, rerun I1 to I5 and M2, M4, M7
 | R41, R42 | T4, T9, S3 |
 | R43 | T4, T9, T12, SC3 |
 
+## Amendment Log
+- After spike S2: selector syntax fixed to [role="region"][aria-label="Main ad controls"]. M15 added.
+
 ## Status
-Phase 6: LOCKED
+Phase 6: LOCKED (amended after S2: M15 added, selector syntax fixed)
