@@ -71,3 +71,84 @@ Effects: step 1 the [role="region"][aria-label="Main ad controls"] appeared in t
 5. Observation by the user, NOT measured: with an ad labeled "1 of 2", after the four clicks ad 1 was skipped and ad 2 also disappeared. This contradicts R3 in 00-steering.md. R3 stays unchanged until spike S3 measures it.
 6. Not tested: fullscreen, signed-out, skippable ads, other Chromium browsers.
 7. The extension must never use physical mouse clicks. It uses element.click() only.
+
+## S3 — Iframe timing and ad pod behavior
+Date: 2026-09-29. Same machine and Chrome as S1 and S2. Unpacked test extension in spikes/s3, top frame only. Three recordings: one observe-only run and two auto runs (four element.click() calls). The pod counter is the "N of M" text at the bottom-left of the player.
+
+### Observe run (no clicks, 118390 ms)
+- ad-showing gained at 254 ms and was still true at the end. It never dropped, including between the two ads.
+- Pod counter: "1 of 2" at 255 ms, absent from 15754 ms to 17005 ms (about 1250 ms), "2 of 2" from 17005 ms. The ⓘ button was hidden during the same gap.
+- Ad 1: video duration 20 s. At 15754 ms the video jumped from 19.9 s to 0 and the duration became 218 s. Ad 2 was still playing at 98 s of 218 s when the recording was stopped.
+- No aboutthisad iframe existed at any point.
+- Not recorded: whether either ad was skippable.
+
+### Auto run 1 (4278 ms, ad duration 66 s, pod counter list empty)
+- step_click_1 at 109 ms, effect 732 ms. step_click_2 at 1257 ms, effect 116 ms. step_click_3 at 1780 ms, effect 301 ms. step_click_4 at 2552 ms, effect 110 ms.
+- Video was paused right after the step 1 click (252 ms).
+- ad-showing became false at 2754 ms, 202 ms after the step 4 click. The iframe was removed and the main video (116 s) started at 2755 ms. The ad had played about 4.3 s.
+
+### Auto run 2 (3886 ms, ad duration 44 s, pod counter list empty)
+- step_click_1 at 107 ms, effect 716 ms. step_click_2 at 1249 ms, effect 109 ms. step_click_3 at 1777 ms, effect 205 ms. step_click_4 at 2408 ms, effect 114 ms.
+- Video was paused right after the step 1 click (258 ms).
+- ad-showing became false at 2505 ms, 97 ms after the step 4 click and before the step 4 effect was logged (2523 ms). The iframe was removed and the main video (1141 s) started at 2506 ms. The ad had played about 3.1 s.
+- The user reports that this ad showed "1 of 2" before the run, and that the main video started directly with no second ad. The probe did not record the counter, because it began clicking at 107 ms, before its first 250 ms poll. Whether the panel hides the counter is not verified.
+
+### User observations (not measured by the probe)
+- S2 run on a "1 of 2" ad: after the four clicks the first ad was skipped and the second ad also disappeared.
+- The user states that after the four clicks the main video starts directly, whatever N and M are.
+
+### Findings
+1. OQ: does the ad keep playing while the panel is open. RESOLVED for 2 runs: the ad video is paused after the ⓘ click.
+2. After the step 4 Close click the ad ended within 97 to 202 ms in both auto runs: ad-showing removed, iframe removed, main video started. This contradicts R3 in 00-steering.md (Block does not skip the current ad). It is measured on two ads of 66 s and 44 s. The user reports the same for pod ads.
+3. Which click ends the ad is not isolated. The ad was still showing after the step 3 click and its effect. It ended after the step 4 click.
+4. In an unblocked pod ad-showing stays true across both ads, with a gap of about 1250 ms without the ⓘ button or the pod counter. R1 to R4 see a pod as one ad instance. If a flow does not complete on ad 1, ad 2 raises no new AD_DETECTED.
+5. The whole flow took about 2.4 to 2.7 s from the first click to the ad ending. The first effect (controls present in the iframe) took 716 to 732 ms. Later effects took 101 to 301 ms.
+6. Design conflict, UNRESOLVED: the design has a step 5 model call after the step 4 click. The ad ends 97 to 202 ms after that click, and onAdEnded calls resetFlow. Step 5 would run against a page that has left the ad state, and resetFlow may cancel the flow first.
+7. Not tested: iframe reuse across a pod (no second ad appeared after blocking), skippable ads, fullscreen, signed-out sessions, whether the block persists for that advertiser, and other browsers.
+
+## S5 — storage access level
+Date: 2026-10-06. Same machine as S1 to S3. Unpacked test extension in spikes/s5. The service worker writes a test value to chrome.storage.local, and a content script on youtube.com tries to read it.
+
+### Results
+| Mode | setAccessLevel | Service worker write and read | Content script read |
+|------|----------------|-------------------------------|---------------------|
+| default | not called | not recorded | SUCCEEDED (value read), immediately and after 2 s |
+| trusted | TRUSTED_CONTEXTS, ok | ok (value read back) | THREW: "Access to storage is not allowed from this context." immediately and after 2 s |
+
+### Findings
+1. OQ4 RESOLVED: chrome.storage.local.setAccessLevel({ accessLevel: "TRUSTED_CONTEXTS" }) blocks content-script reads while the service worker keeps full access.
+2. With the default access level, a content script can read everything in chrome.storage.local, including a stored API key. The extension must call setAccessLevel before writing any key.
+3. Not tested: content-script writes, other Chromium browsers, and older Chrome versions. The access level may not persist across a browser restart, so background/index.js must call setAccessLevel on every service worker start (it already does, per 03-design.md).
+
+## S4b — Free OpenAI-compatible API (Groq)
+Date: 2026-10-06. Same machine as S1 to S5. Provider: Groq free tier, base URL https://api.groq.com/openai/v1, model openai/gpt-oss-20b. Key entered through the options page only. Tested through the extension in real Chrome on real ads, not with curl.
+
+### Groq free tier (from console.groq.com/docs/rate-limits, checked 2026-10-06)
+- openai/gpt-oss-20b and openai/gpt-oss-120b: 30 requests per minute, 1000 per day, 8000 tokens per minute, 200000 per day.
+- llama-3.3-70b-versatile is not listed for the free tier.
+
+### Results in order
+| Run | Request settings | Flow log | Cause |
+|-----|------------------|----------|-------|
+| 1 | json_object | abort, invalid-response, calls 1, 1420 ms | Not recorded (detail codes did not exist yet) |
+| 2 | json_object | abort, provider-timeout, calls 1, 3029 ms | Call exceeded JEV_TIMEOUT_MS 3000 |
+| 3 | json_object, reasoning_effort low, include_reasoning false | abort, navigated, calls 1, 756 ms | detector reset on yt-navigate-finish, not a provider issue |
+| 4 | same as 3 | abort, navigated, calls 1, 1443 ms | same as 3 |
+| 5 | same as 3 | abort, invalid-response, calls 1, 1746 ms | Service worker: choice-not-string |
+| 6 | strict json_schema, reasoning_effort low, include_reasoning false | abort, not-allowed, calls 1, 1389 ms, confidence 0.9 | Step 1 snapshot held no ⓘ; model chose Settings (e5) |
+| 7 | same as 6 | success, verified-closed, steps 4, calls 4, 4946 ms, confidences 0.99, 0.99, 0.99, 0.99 | Correct entry at steps 1 to 4 |
+
+### Findings
+1. response_format json_object is accepted, but gpt-oss-20b returned a non-string choice in run 5. A strict json_schema (choice enum of the offered ids, confidence 0 to 1) is accepted and gave valid answers in runs 6 and 7.
+2. Without reasoning_effort low, one call took over 3000 ms (run 2). With it, single calls finished inside the 3000 ms timeout in every later run.
+3. Run 7 returned the correct entry id at steps 1, 2 and 3 (and 4) at confidence 0.99. This is one live run, not three separate hand-written snapshots.
+4. Run 6: with no correct option offered, the model chose a wrong control at confidence 0.9 instead of WAIT or BLOCKED. Same weakness as Nano in S1 case B. The R40 allowlist blocked the click.
+5. Per-call latency was not measured separately. Single-call aborts took 756 to 1746 ms including snapshot and messaging. The full successful flow took 4946 ms.
+6. Not tested: the error shape for a wrong key (expected provider-auth from HTTP 401), rate-limit behavior, and openai/gpt-oss-120b.
+
+## T15 live run
+Date: 2026-10-06. Same machine. Provider openai (Groq, openai/gpt-oss-20b, settings as S4b run 7). Video opened by clicking it on the YouTube home page.
+- Result: success, verified-closed, steps 4, calls 4, 4946 ms, confidences 0.99, 0.99, 0.99, 0.99. The user confirmed the ad was blocked and skipped.
+- Fixes needed before this run succeeded: static provider import in the service worker; fixed reason codes; Groq gpt-oss request settings (S4b); detector ignores the yt-navigate-finish of the navigation that opened the ad's video; step 1 readiness waits for a visible My Ad Center button.
+- One run only. The 20-ad live protocol in 06-test-plan.md is not done.
+- The fixture test (extension/tests/integration.test.js) is not written yet.

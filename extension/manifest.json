@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "permissions": ["storage"],
   "host_permissions": ["https://www.youtube.com/*", "https://ai-gateway.vercel.sh/*"],
+  "optional_host_permissions": ["https://*/*"],
   "background": { "service_worker": "src/background/index.js", "type": "module" },
   "content_scripts": [
     { "matches": ["https://www.youtube.com/*"], "js": ["src/content/index.js"], "run_at": "document_idle" }

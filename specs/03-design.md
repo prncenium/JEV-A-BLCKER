@@ -50,6 +50,7 @@ extension/
   "version": "0.1.0",
   "permissions": ["storage"],
   "host_permissions": ["https://www.youtube.com/*", "https://ai-gateway.vercel.sh/*"],
+  "optional_host_permissions": ["https://*/*"],
   "background": { "service_worker": "src/background/index.js", "type": "module" },
   "content_scripts": [
     { "matches": ["https://www.youtube.com/*"], "js": ["src/content/index.js"], "run_at": "document_idle" }
@@ -58,11 +59,13 @@ extension/
 }
 ```
 
+The options page requests host permission for the chosen openai base URL origin with chrome.permissions.request when the user saves, so no fixed AI host is needed.
+
 ## Steps table (used by scopes, snapshot, allowlist, flow)
 
 | Step | Goal text sent to model | Scope | Readiness | Only click allowed (R40) |
 |------|-------------------------|-------|-----------|--------------------------|
-| 1 | Open the My Ad Center panel for the playing ad | #movie_player | #movie_player has class ad-showing | rule (a) |
+| 1 | Open the My Ad Center panel for the playing ad | #movie_player | #movie_player has class ad-showing and a visible button[aria-label="My Ad Center"] inside it | rule (a) |
 | 2 | Click Block | aboutthisad iframe: [role="region"][aria-label="Main ad controls"] and the visible Close button | region present in iframe contentDocument | rule (b) |
 | 3 | Click Continue in the Stop seeing this ad? dialog | aboutthisad iframe: div[role=dialog][aria-label="Stop seeing this ad?"] | dialog present and visible | rule (c) |
 | 4 | Close the My Ad Center panel | aboutthisad iframe: the visible Close button | Close button visible, outside [role=banner] | rule (d) |
@@ -155,6 +158,21 @@ All messages are { type, payload }. Unknown types are ignored.
 { ts, outcome: "success" or "abort", reason, steps, calls, durationMs, confidences: number[] }
 No snapshot content, no URLs, no account identifiers (R43).
 
+`reason` is always one of these fixed codes (defined as FLOW_REASONS and PROVIDER_REASONS in shared/constants.js). Never a message, URL, key or response body.
+- Success: verified-closed
+- Flow aborts: timeout, scope-unavailable, call-limit, bad-decision, blocked, low-confidence, retry-exhausted, unexpected-done, unknown-target, not-allowed, close-not-verified, navigated, ad-ended, error (any exception that is not a coded failure)
+- Provider and messaging codes, set by the background or a provider, passed through unchanged:
+  - disabled: DECIDE while the ad blocker is off or no provider is set
+  - no-response: the background did not answer the DECIDE message
+  - invalid-response: the model answer or the decision did not match the contract
+  - provider-error: any provider failure without a more specific code
+  - provider-unavailable: the provider is not configured, the device cannot run the model, or the provider is the Jev stub
+  - provider-model-not-ready: the Nano model still has to download
+  - provider-needs-activation: the browser needs a user gesture before it can start the model
+  - provider-import-failed: the provider module did not load in the service worker
+  - provider-timeout, provider-network: the request timed out or did not reach the endpoint
+  - provider-auth (HTTP 401 or 403), provider-rate-limit (HTTP 429), provider-http-error (any other non-2xx status)
+
 ## State machine
 ```
 IDLE
@@ -203,12 +221,14 @@ IDLE reset
 - DD5: Config is checked with GET_CONFIG at every AD_DETECTED.
 - DD6: Step 5 is a model call whose only valid outcome is DONE (or WAIT / BLOCKED). Minimum calls per successful flow is 5, leaving 3 spare under R23.
 - DD7: Nano is an experimental fallback. Spike S1 showed it picks a wrong option when the right one is missing, follows instructions injected into labels, and reports high confidence on wrong answers. Its confidence is not a safety gate. The R40 allowlist is. Jev is the primary provider.
+- DD8: Step 5 is local verification per R44 and R45. It sends no model call. The STEPS table keeps 5 entries and allowlist.js keeps allowing no click at step 5. A successful flow needs 4 model calls.
+- DD9: A third provider "openai" is added: any OpenAI-compatible chat completions endpoint with a user-supplied base URL, model and key. It lives in background/providers/openai.js. The Jev provider is deferred. In providers/index.js "jev" resolves to a stub that throws "jev not implemented". The default provider list is nano, openai, jev.
 
 ## Open questions (each gets a spike task in 05-tasks.md)
 - OQ1: RESOLVED by spike S1 (Chrome 153). LanguageModel is available in the MV3 service worker. No offscreen document and no offscreen permission are needed.
 - OQ2: Does element.click() from the content script trigger YouTube's handlers on the ⓘ button and on the iframe's div[role=button] elements? If not, fall back to dispatching a pointer and mouse event sequence.
 - OQ3: Can a top-frame content script read the same-origin iframe's contentDocument without all_frames? Expected yes.
-- OQ4: Does storage.local.setAccessLevel(TRUSTED_CONTEXTS) block content-script reads in current Chrome?
+- OQ4: RESOLVED by spike S5 (this machine, one Chrome version). TRUSTED_CONTEXTS blocks content-script reads, and the service worker keeps access.
 - OQ5: Jev request and response format, and Vercel free-tier status. Resolved in 04-decision-contract.md.
 - OQ6: The four unknowns listed in 02-recon.md become test cases in 06-test-plan.md.
 
@@ -244,10 +264,17 @@ IDLE reset
 | R41 | scopes.js |
 | R42 | scopes.js, flow.js |
 | R43 | scopes.js, flow.js, background/index.js |
+| R44, R45 | flow.js, executor.js |
 
 ## Amendment Log
 - After spike S1: nano.js runs in the service worker with no offscreen document, OQ1 resolved, DD7 added.
 - After spike S2: selector syntax fixed to [role="region"][aria-label="Main ad controls"].
+- After S3 and S5: DD8 and DD9 added, optional_host_permissions added, R44 and R45 traced.
+- After nano failure in real Chrome: flow log reasons are fixed codes (see Flow log entry). A provider failure keeps its code from the provider to the log, instead of collapsing into error.
+- DD10: temporary console-only debug output on not-allowed aborts, remove after T15.
+- After navigated aborts in real Chrome: detector.js emits onNavigated only when the video changed and the navigation did not start before the current ad. DD10 also covers a temporary console.debug line per navigation (booleans only).
+- After a live not-allowed abort whose step 1 snapshot held no ⓘ: step 1 readiness also waits for a visible My Ad Center button, because the ad overlay is drawn after ad-showing is set. DD10 also covers a temporary step1-not-ready console line (sizes and styles only).
+- For Safari (untested): shared/ext.js picks `browser` when it exists, else `chrome`, so Chrome, Edge and Opera are unchanged. background/index.js calls storage.local.setAccessLevel only when it exists and never fails startup on it, because Safari supports setAccessLevel only for storage.session (MDN browser-compat-data). In Safari, R33 key isolation therefore relies on the content script never reading storage.
 
 ## Status
-Phase 3: LOCKED (all R1 to R43 traced; amended after S1: OQ1 resolved, DD7 added; selector syntax fixed after S2)
+Phase 3: LOCKED (all R1 to R45 traced; amended after S1, S2, S3 and S5)

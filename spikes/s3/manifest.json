@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "S3 pod probe",
+  "version": "0.0.1",
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

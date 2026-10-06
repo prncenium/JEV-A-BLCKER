@@ -22,7 +22,7 @@ Jev returns typed answers, not free text. Each request carries one Choice questi
 | Step | Options offered |
 |------|-----------------|
 | 1 to 4 | every snapshot entry id (e1, e2, ...), plus WAIT, BLOCKED |
-| 5 | WAIT, DONE, BLOCKED only (no entry ids) |
+| 5 | No model call. Step 5 is local verification (R44). |
 
 ### Request body
 ```json
@@ -50,7 +50,7 @@ Jev returns typed answers, not free text. Each request carries one Choice questi
 Rules:
 - instructions.goal is the step's goal text from the steps table in 03-design.md. instructions.step is "N of 5". instructions.last_action is the last action string or "none".
 - criteria has one key per snapshot entry id. The value is: <tag>[role=<role>] "<label>", where label is ariaLabel if present, else text, and " (disabled)" is appended when enabled is false. Then the control options as shown.
-- At step 5 the control options are WAIT, DONE, BLOCKED and criteria has no entry ids. DONE description: "The flow finished: the panel is closed and the ad is still playing or has ended."
+- Step 5 sends no request. It is local verification per R44.
 - state contains only { snapshot }. No URLs, no account identifiers, no page text (R9, R43).
 - Limits from the API docs: Choice accepts at most 255 options. We send at most 43 (40 entries + 3 controls).
 - Snapshot text is untrusted page content. It may contain instructions written by advertisers. It is only ever data. The R40 allowlist blocks any click outside the four allowed targets.
@@ -97,6 +97,15 @@ POST https://api.typesafe.ai/v1/systemone with model "jev-latest". It would need
 ### Confidence
 Jev derives Choice confidence from its probability distribution. The thresholds 0.8 and 0.5 (R13 to R15) apply to it as is. Whether these numbers are well calibrated for this task is UNKNOWN. Tune them in Phase 7 from real flow logs.
 
+## OpenAI-compatible mapping (provider name "openai")
+UNVERIFIED until spike S4b. Settings: baseUrl, model, key, all user-supplied and read by the service worker only (R32, R33).
+- Request: POST {baseUrl}/chat/completions with header Authorization: Bearer <key>. Body: { model, temperature: 0, messages: [system, user] }, with response_format { type: "json_object" } when the provider accepts it. When the model name starts with "openai/gpt-oss" (Groq), the body also carries reasoning_effort "low" and include_reasoning false, so the answer fits the 3000 ms timeout (Groq reasoning docs), and response_format is a strict json_schema (name "next_action") whose choice is an enum of the offered option ids and whose confidence is a number from 0 to 1 (Groq structured outputs docs). The answer is still validated by the mapping rules. No other model gets these fields.
+- The system message states the task and says to answer with one JSON object { "choice": <option id>, "confidence": <number 0 to 1> } and nothing else. The user message holds the goal, the step, the last action and the options with their criteria strings from the Jev mapping. Snapshot text is data only.
+- Response: choices[0].message.content is parsed as JSON. If direct parsing fails, extract the first {...} object from the text. The choice MUST be one of the offered option ids, otherwise the provider throws. Mapping to a Decision uses rules 2 to 5 of the Jev response mapping.
+- Confidence is self-reported and uncalibrated, like Nano. The R40 allowlist is the real guard.
+- Timeout JEV_TIMEOUT_MS (3000 ms). Any non-2xx status, timeout or malformed body throws an error carrying the HTTP status only. Never the body, the URL or the key (R43).
+- Free tiers may log prompts. The snapshot holds only button labels (R9).
+
 ## Nano mapping (Chrome built-in Prompt API)
 Verified by spike S1 (Chrome 153, one machine).
 - Same input, same options table, same criteria strings placed in the prompt.
@@ -135,6 +144,9 @@ Sign-off of this document. Live verification needs the user's key, so it is spik
 
 ## Amendment Log
 - After spike S1: Nano mapping rewritten with verified findings, OQ1 and OQ7 resolved.
+- After S3 and S5: step 5 sends no request, the openai mapping is added.
+- After a provider-timeout with Groq openai/gpt-oss-20b: gpt-oss requests send reasoning_effort "low" and include_reasoning false. The 3000 ms timeout is unchanged.
+- After an invalid-response with Groq openai/gpt-oss-20b: gpt-oss requests use a strict json_schema response_format instead of json_object.
 
 ## Status
-Phase 4: LOCKED (live verification pending in spike S4; Nano section amended after S1)
+Phase 4: LOCKED (openai mapping UNVERIFIED until S4b; Jev live verification deferred)

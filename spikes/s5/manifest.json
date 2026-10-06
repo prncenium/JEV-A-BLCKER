@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "S5 storage access probe",
+  "version": "0.0.1",
+  "permissions": ["storage"],
+  "background": { "service_worker": "sw.js" },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

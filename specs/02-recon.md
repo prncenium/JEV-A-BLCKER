@@ -30,7 +30,7 @@ Exactly four targets: ⓘ (My Ad Center button in #movie_player), Block, Continu
 
 ## Still unknown
 - RESOLVED by S2: the iframe is created by the ⓘ click, and the controls were present about 615 ms later (one run).
-- Does the ad keep playing while the panel is open?
+- RESOLVED by S3: the ad video is paused while the panel is open (2 runs).
 - Behavior when signed out.
 - Skippable and other ad variants.
 

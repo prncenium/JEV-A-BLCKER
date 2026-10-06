@@ -13,10 +13,10 @@ Format: EARS. Every requirement is testable. IDs are permanent — never renumbe
 ## Snapshot
 
 - **R6** — WHEN building a snapshot, the system SHALL include only elements that are visible (non-zero bounding box, not `display:none`, not `visibility:hidden`) and clickable (`button`, `a`, `role="button"`, `role="menuitem"`), and that lie within the scope of the current step: for step 1, descendants of `#movie_player`; for steps 2 to 4, descendants of the `contentDocument` of `iframe[src*="aboutthisad"]`. (amended after recon)
-- **R7** — The system SHALL assign each included element a stable `data-jev-id` attribute for the duration of one flow run.
+- **R7** — The system SHALL assign each included element a `data-jev-id` attribute, valid until the next snapshot or the end of the flow run, whichever comes first. (amended: ids are renewed on every snapshot)
 - **R8** — Each snapshot entry SHALL contain: `id`, `tag`, `role`, `ariaLabel`, `text` (trimmed, max 80 chars), and `enabled`.
 - **R9** — The system SHALL NOT include in the snapshot: video content, page transcript, watch history, account identifiers, any text outside the current step's scope, the iframe `src` URL, the iframe header (`[role=banner]`), or any iframe element outside `[role="region"][aria-label="Main ad controls"]`, `div[role=dialog][aria-label="Stop seeing this ad?"]`, and the visible `button[aria-label="Close"]`. (amended after recon)
-- **R10** — The system SHALL cap a snapshot at 40 entries, keeping those nearest the player controls when over the cap.
+- **R10** — The system SHALL cap a snapshot at 40 entries, keeping the first 40 in document order when over the cap. (amended after S3: "nearest the player controls" was undefined)
 
 ## Decision
 
@@ -45,8 +45,8 @@ Format: EARS. Every requirement is testable. IDs are permanent — never renumbe
 
 ## Configuration
 
-- **R27** — The system SHALL provide an options page allowing the user to select the provider (`nano` or `jev`).
-- **R28** — WHEN the provider is `jev`, the options page SHALL accept an API key and store it in `chrome.storage.local`.
+- **R27** — The system SHALL provide an options page allowing the user to select the provider (`nano`, `openai` or `jev`). (amended)
+- **R28** — WHEN the provider is `openai`, the options page SHALL accept an API key, a base URL and a model name. WHEN the provider is `jev`, it SHALL accept an API key. Keys are stored in `chrome.storage.local` and never in source. (amended)
 - **R29** — The system SHALL NOT contain any API key in source, build output, or version control.
 - **R30** — WHEN no provider is configured, the system SHALL remain inactive and SHALL NOT call any network endpoint.
 - **R31** — The options page SHALL provide a master enable/disable toggle, defaulting to disabled on first install.
@@ -73,9 +73,15 @@ Format: EARS. Every requirement is testable. IDs are permanent — never renumbe
 
 Every component in 02-design.md must map to at least one requirement ID above. Every task in 04-tasks.md must cite the requirement IDs it satisfies.
 
+## Post-Spike Requirements
+- **R44** — WHEN the step 4 click completes, the system SHALL make no model call. It SHALL declare the flow successful as soon as `#movie_player` no longer has the class `ad-showing`, or the step 4 Close button is gone, polling every 100 ms for up to 3000 ms. Otherwise it SHALL abort. (spike S3: the ad ends 97 to 202 ms after the step 4 click)
+- **R45** — WHEN `ad-showing` is removed after the step 4 click was performed in the current flow, the system SHALL treat it as success and SHALL NOT reset or abort the running flow before logging it. Removal at any earlier step aborts as before.
+
 ## Amendment Log
 - After recon (02-recon.md): R6, R9, R18, R23 amended in place. R40 to R43 added. Goal wording changed from "Block ad / confirm" to "Block / Continue".
 - After spike S2: selector syntax fixed to [role="region"][aria-label="Main ad controls"].
+- After S3 and S5: R10, R27, R28 amended. R44 and R45 added. Step 5 is local verification. The openai provider is added.
+- After T9: R7 amended, ids are per snapshot.
 
 ## Status
-Phase 1: LOCKED (R1 to R43, amended after recon; selector syntax fixed after S2)
+Phase 1: LOCKED (R1 to R45, amended after recon, S2, S3, S5 and T9)

@@ -18,7 +18,7 @@
 - Fake provider: returns scripted decisions per call, so every branch of the state machine can be forced.
 
 ## Integration tests (extension/tests/integration.test.js, task T15)
-- I1: happy path. Detector fires, 5 model calls, 4 clicks in order, success log, no data-jev-id left.
+- I1: happy path. Detector fires, 4 model calls, 4 clicks in order, success log, no data-jev-id left.
 - I2: F5 only. No AD_DETECTED, no message, no click.
 - I3: each abort path (low confidence, BLOCKED, unknown targetId, allowlist rejection, 9th call, over 10s, thrown error) leaves the DOM clean and logs an abort.
 - I4: two ads in a row (pod). The second ad triggers a second flow after ad-showing is removed and re-added (R4, R22).
@@ -99,9 +99,11 @@ After any YouTube UI change or any spec amendment, rerun I1 to I5 and M2, M4, M7
 | R40 | T6, SC1 |
 | R41, R42 | T4, T9, S3 |
 | R43 | T4, T9, T12, SC3 |
+| R44, R45 | T9, I1, M2 |
 
 ## Amendment Log
 - After spike S2: selector syntax fixed to [role="region"][aria-label="Main ad controls"]. M15 added.
+- After S3 and S5: I1 uses 4 model calls, R44 and R45 traced.
 
 ## Status
 Phase 6: LOCKED (amended after S2: M15 added, selector syntax fixed)
